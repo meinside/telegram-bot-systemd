@@ -1,0 +1,5 @@
+*.swp
+
+telegram-bot-systemd
+
+config.json
