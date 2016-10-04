@@ -50,6 +50,7 @@ const (
 	MessageNoControllableServices = "No controllable services."
 	MessageServiceToStart         = "Select service to start:"
 	MessageServiceToStop          = "Select service to stop:"
+	MessageCancel                 = "Cancel"
 	MessageCanceled               = "Canceled."
 )
 
@@ -192,20 +193,27 @@ func isControllableService(service string) bool {
 
 // for showing help message
 func getHelp() string {
-	return `
+	return fmt.Sprintf(`
 Following commands are supported:
 
 *For Systemctl*
 
-/servicestatus : show status of each service (systemctl is-active)
-/servicestart  : start a service (systemctl start)
-/servicestop   : stop a service (systemctl stop)
+%s : show status of each service (systemctl is-active)
+%s : start a service (systemctl start)
+%s : stop a service (systemctl stop)
 
 *Others*
 
-/status : show this bot's status
-/help : show this help message
-`
+%s : show this bot's status
+%s : show this help message
+`,
+		CommandServiceStatus,
+		CommandServiceStart,
+		CommandServiceStop,
+
+		CommandStatus,
+		CommandHelp,
+	)
 }
 
 // for showing current status of this bot
@@ -234,6 +242,8 @@ func parseServiceCommand(txt string) (message string, keyboards [][]bot.InlineKe
 					} else {
 						message = output
 					}
+				} else if strings.HasPrefix(txt, CommandCancel) { // cancel command
+					message = MessageCanceled
 				}
 			} else {
 				if strings.HasPrefix(txt, CommandServiceStart) { // start service
@@ -249,6 +259,14 @@ func parseServiceCommand(txt string) (message string, keyboards [][]bot.InlineKe
 
 				keyboards = [][]bot.InlineKeyboardButton{
 					bot.NewInlineKeyboardButtonsWithCallbackData(keys),
+
+					// cancel
+					[]bot.InlineKeyboardButton{
+						bot.InlineKeyboardButton{
+							Text:         MessageCancel,
+							CallbackData: CommandCancel,
+						},
+					},
 				}
 			}
 		}
@@ -389,28 +407,38 @@ func processCallbackQuery(b *bot.Bot, update bot.Update) bool {
 	result := false
 
 	var message string = ""
-	if strings.HasPrefix(txt, CommandServiceStart) || strings.HasPrefix(txt, CommandServiceStop) { // service
+	if strings.HasPrefix(txt, CommandCancel) { // cancel command
+		message = ""
+	} else if strings.HasPrefix(txt, CommandServiceStart) || strings.HasPrefix(txt, CommandServiceStop) { // service
 		message, _ = parseServiceCommand(txt)
 	} else {
 		log.Printf("*** Unprocessable callback query: %s\n", txt)
+
+		return result // == false
 	}
 
+	// answer callback query
+	options := map[string]interface{}{}
 	if len(message) > 0 {
-		// answer callback query
-		if apiResult := b.AnswerCallbackQuery(query.Id, map[string]interface{}{"text": message}); apiResult.Ok {
-			// edit message and remove inline keyboards
-			options := map[string]interface{}{
-				"chat_id":    query.Message.Chat.Id,
-				"message_id": query.Message.MessageId,
-			}
-			if apiResult := b.EditMessageText(&message, options); apiResult.Ok {
-				result = true
-			} else {
-				log.Printf("*** Failed to edit message text: %s\n", *apiResult.Description)
-			}
-		} else {
-			log.Printf("*** Failed to answer callback query: %+v\n", query)
+		options["text"] = message
+	}
+	if apiResult := b.AnswerCallbackQuery(query.Id, options); apiResult.Ok {
+		// edit message and remove inline keyboards
+		options := map[string]interface{}{
+			"chat_id":    query.Message.Chat.Id,
+			"message_id": query.Message.MessageId,
 		}
+
+		if len(message) <= 0 {
+			message = MessageCanceled
+		}
+		if apiResult := b.EditMessageText(&message, options); apiResult.Ok {
+			result = true
+		} else {
+			log.Printf("*** Failed to edit message text: %s\n", *apiResult.Description)
+		}
+	} else {
+		log.Printf("*** Failed to answer callback query: %+v\n", query)
 	}
 
 	return result
