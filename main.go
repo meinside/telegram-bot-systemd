@@ -257,17 +257,15 @@ func parseServiceCommand(txt string) (message string, keyboards [][]bot.InlineKe
 					keys[v] = fmt.Sprintf("%s %s", cmd, v)
 				}
 
-				keyboards = [][]bot.InlineKeyboardButton{
-					bot.NewInlineKeyboardButtonsWithCallbackData(keys),
-
-					// cancel
+				keyboards = bot.NewInlineKeyboardButtonsAsRowsWithCallbackData(keys)
+				keyboards = append(keyboards, // cancel button
 					[]bot.InlineKeyboardButton{
 						bot.InlineKeyboardButton{
 							Text:         MessageCancel,
 							CallbackData: CommandCancel,
 						},
 					},
-				}
+				)
 			}
 		}
 		continue
