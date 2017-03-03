@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
 	"os/signal"
 	"path"
 	"path/filepath"
@@ -19,6 +18,7 @@ import (
 
 	"github.com/pkg/profile"
 
+	svc "github.com/meinside/rpi-tools/service"
 	bot "github.com/meinside/telegram-bot-go"
 )
 
@@ -231,13 +231,13 @@ func parseServiceCommand(txt string) (message string, keyboards [][]bot.InlineKe
 
 			if isControllableService(service) {
 				if strings.HasPrefix(txt, CommandServiceStart) { // start service
-					if output, ok := systemctlStart(service); ok {
+					if output, ok := svc.SystemctlStart(service); ok {
 						message = fmt.Sprintf("Started service: %s", service)
 					} else {
 						message = output
 					}
 				} else if strings.HasPrefix(txt, CommandServiceStop) { // stop service
-					if output, ok := systemctlStop(service); ok {
+					if output, ok := svc.SystemctlStop(service); ok {
 						message = fmt.Sprintf("Stopped service: %s", service)
 					} else {
 						message = output
@@ -272,38 +272,6 @@ func parseServiceCommand(txt string) (message string, keyboards [][]bot.InlineKe
 	}
 
 	return message, keyboards
-}
-
-// systemctl status (is-active)
-func systemctlStatus() (message string, success bool) {
-	args := []string{"systemctl", "is-active"}
-	args = append(args, controllableServices...)
-
-	output, _ := exec.Command("sudo", args...).CombinedOutput()
-	lines := []string{}
-	for i, status := range strings.Split(strings.TrimSpace(string(output)), "\n") {
-		lines = append(lines, fmt.Sprintf("%s: *%s*", controllableServices[i], status))
-	}
-
-	return strings.Join(lines, "\n"), true
-}
-
-// systemctl start
-func systemctlStart(service string) (message string, success bool) {
-	if output, err := exec.Command("sudo", "systemctl", "start", service).CombinedOutput(); err == nil {
-		return string(output), true
-	} else {
-		return fmt.Sprintf("Failed to start service: %s", service), false
-	}
-}
-
-// systemctl stop
-func systemctlStop(service string) (message string, success bool) {
-	if output, err := exec.Command("sudo", "systemctl", "stop", service).CombinedOutput(); err == nil {
-		return string(output), true
-	} else {
-		return fmt.Sprintf("Failed to start service: %s", service), false
-	}
 }
 
 // process incoming update from Telegram
@@ -351,7 +319,10 @@ func processUpdate(b *bot.Bot, update bot.Update) bool {
 				message = MessageDefault
 			// systemctl
 			case strings.HasPrefix(txt, CommandServiceStatus):
-				message, _ = systemctlStatus()
+				statuses, _ := svc.SystemctlStatus(controllableServices)
+				for service, status := range statuses {
+					message += fmt.Sprintf("%s: *%s*\n", service, status)
+				}
 			case strings.HasPrefix(txt, CommandServiceStart) || strings.HasPrefix(txt, CommandServiceStop):
 				if len(controllableServices) > 0 {
 					var keyboards [][]bot.InlineKeyboardButton
