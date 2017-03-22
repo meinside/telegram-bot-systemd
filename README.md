@@ -9,8 +9,8 @@ Install Go and generate your Telegram bot's API token.
 ## 1. Install
 
 ```bash
-$ go get -u github.com/meinside/telegram-bot-systemd
-$ cd $GOPOATH/src/github.com/meinside/telegram-bot-systemd
+$ git clone https://github.com/meinside/telegram-bot-systemd.git
+$ cd telegram-bot-systemd
 $ cp config.json.sample config.json
 $ vi config.json
 ```
