@@ -294,6 +294,9 @@ func processUpdate(b *bot.Bot, update bot.Update) bool {
 
 	pool.Lock()
 	if session, exists := pool.Sessions[userId]; exists {
+		// send chat action (typing...)
+		b.SendChatAction(update.Message.Chat.Id, bot.ChatActionTyping)
+
 		// text from message
 		var txt string
 		if update.Message.HasText() {
