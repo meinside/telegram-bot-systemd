@@ -23,35 +23,35 @@ import (
 )
 
 const (
-	ConfigFilename = "config.json"
+	configFilename = "config.json"
 
-	//DoProfiling = true
-	DoProfiling = false
+	//doProfiling = true
+	doProfiling = false
 
-	GithubPageUrl = "https://github.com/meinside/telegram-bot-systemd"
+	githubPageUrl = "https://github.com/meinside/telegram-bot-systemd"
 
 	// for monitoring
-	DefaultMonitorIntervalSeconds = 3
+	defaultMonitorIntervalSeconds = 3
 
 	// commands
-	CommandStart  = "/start"
-	CommandStatus = "/status"
-	CommandHelp   = "/help"
-	CommandCancel = "/cancel"
+	commandStart  = "/start"
+	commandStatus = "/status"
+	commandHelp   = "/help"
+	commandCancel = "/cancel"
 
 	// commands for systemctl
-	CommandServiceStatus = "/servicestatus"
-	CommandServiceStart  = "/servicestart"
-	CommandServiceStop   = "/servicestop"
+	commandServiceStatus = "/servicestatus"
+	commandServiceStart  = "/servicestart"
+	commandServiceStop   = "/servicestop"
 
 	// messages
-	MessageDefault                = "Input your command:"
-	MessageUnknownCommand         = "Unknown command."
-	MessageNoControllableServices = "No controllable services."
-	MessageServiceToStart         = "Select service to start:"
-	MessageServiceToStop          = "Select service to stop:"
-	MessageCancel                 = "Cancel"
-	MessageCanceled               = "Canceled."
+	messageDefault                = "Input your command:"
+	messageUnknownCommand         = "Unknown command."
+	messageNoControllableServices = "No controllable services."
+	messageServiceToStart         = "Select service to start:"
+	messageServiceToStop          = "Select service to stop:"
+	messageCancel                 = "Cancel"
+	messageCanceled               = "Canceled."
 )
 
 type Status int16
@@ -61,7 +61,7 @@ const (
 )
 
 type Session struct {
-	UserId        string
+	UserID        string
 	CurrentStatus Status
 }
 
@@ -83,7 +83,7 @@ type Config struct {
 func getConfig() (config Config, err error) {
 	_, filename, _, _ := runtime.Caller(0) // = __FILE__
 
-	if file, err := ioutil.ReadFile(filepath.Join(path.Dir(filename), ConfigFilename)); err == nil {
+	if file, err := ioutil.ReadFile(filepath.Join(path.Dir(filename), configFilename)); err == nil {
 		var conf Config
 		if err := json.Unmarshal(file, &conf); err == nil {
 			return conf, nil
@@ -127,8 +127,8 @@ var launched time.Time
 
 // keyboards
 var allKeyboards = [][]bot.KeyboardButton{
-	bot.NewKeyboardButtons(CommandServiceStatus, CommandServiceStart, CommandServiceStop),
-	bot.NewKeyboardButtons(CommandStatus, CommandHelp),
+	bot.NewKeyboardButtons(commandServiceStatus, commandServiceStart, commandServiceStop),
+	bot.NewKeyboardButtons(commandStatus, commandHelp),
 }
 
 // initialization
@@ -136,7 +136,7 @@ func init() {
 	launched = time.Now()
 
 	// for profiling
-	if DoProfiling {
+	if doProfiling {
 		defer profile.Start(
 			profile.BlockProfile,
 			profile.CPUProfile,
@@ -151,7 +151,7 @@ func init() {
 		controllableServices = config.ControllableServices
 		monitorInterval = config.MonitorInterval
 		if monitorInterval <= 0 {
-			monitorInterval = DefaultMonitorIntervalSeconds
+			monitorInterval = defaultMonitorIntervalSeconds
 		}
 		isVerbose = config.IsVerbose
 
@@ -159,7 +159,7 @@ func init() {
 		sessions := make(map[string]Session)
 		for _, v := range availableIds {
 			sessions[v] = Session{
-				UserId:        v,
+				UserID:        v,
 				CurrentStatus: StatusWaiting,
 			}
 		}
@@ -207,12 +207,12 @@ Following commands are supported:
 %s : show this bot's status
 %s : show this help message
 `,
-		CommandServiceStatus,
-		CommandServiceStart,
-		CommandServiceStop,
+		commandServiceStatus,
+		commandServiceStart,
+		commandServiceStop,
 
-		CommandStatus,
-		CommandHelp,
+		commandStatus,
+		commandHelp,
 	)
 }
 
@@ -223,33 +223,33 @@ func getStatus() string {
 
 // parse service command and start/stop given service
 func parseServiceCommand(txt string) (message string, keyboards [][]bot.InlineKeyboardButton) {
-	message = MessageNoControllableServices
+	message = messageNoControllableServices
 
-	for _, cmd := range []string{CommandServiceStart, CommandServiceStop} {
+	for _, cmd := range []string{commandServiceStart, commandServiceStop} {
 		if strings.HasPrefix(txt, cmd) {
 			service := strings.TrimSpace(strings.Replace(txt, cmd, "", 1))
 
 			if isControllableService(service) {
-				if strings.HasPrefix(txt, CommandServiceStart) { // start service
+				if strings.HasPrefix(txt, commandServiceStart) { // start service
 					if output, ok := svc.SystemctlStart(service); ok {
 						message = fmt.Sprintf("Started service: %s", service)
 					} else {
 						message = output
 					}
-				} else if strings.HasPrefix(txt, CommandServiceStop) { // stop service
+				} else if strings.HasPrefix(txt, commandServiceStop) { // stop service
 					if output, ok := svc.SystemctlStop(service); ok {
 						message = fmt.Sprintf("Stopped service: %s", service)
 					} else {
 						message = output
 					}
-				} else if strings.HasPrefix(txt, CommandCancel) { // cancel command
-					message = MessageCanceled
+				} else if strings.HasPrefix(txt, commandCancel) { // cancel command
+					message = messageCanceled
 				}
 			} else {
-				if strings.HasPrefix(txt, CommandServiceStart) { // start service
-					message = MessageServiceToStart
-				} else if strings.HasPrefix(txt, CommandServiceStop) { // stop service
-					message = MessageServiceToStop
+				if strings.HasPrefix(txt, commandServiceStart) { // start service
+					message = messageServiceToStart
+				} else if strings.HasPrefix(txt, commandServiceStop) { // stop service
+					message = messageServiceToStop
 				}
 
 				keys := map[string]string{}
@@ -261,10 +261,10 @@ func parseServiceCommand(txt string) (message string, keyboards [][]bot.InlineKe
 				keyboards = bot.NewInlineKeyboardButtonsAsRowsWithCallbackData(keys)
 
 				// add a cancel button
-				cancel := CommandCancel
+				cancel := commandCancel
 				keyboards = append(keyboards, []bot.InlineKeyboardButton{
 					bot.InlineKeyboardButton{
-						Text:         MessageCancel,
+						Text:         messageCancel,
 						CallbackData: &cancel,
 					}})
 			}
@@ -296,7 +296,7 @@ func processUpdate(b *bot.Bot, update bot.Update) bool {
 	pool.Lock()
 	if session, exists := pool.Sessions[userId]; exists {
 		// send chat action (typing...)
-		b.SendChatAction(update.Message.Chat.Id, bot.ChatActionTyping)
+		b.SendChatAction(update.Message.Chat.ID, bot.ChatActionTyping)
 
 		// text from message
 		var txt string
@@ -319,15 +319,15 @@ func processUpdate(b *bot.Bot, update bot.Update) bool {
 		case StatusWaiting:
 			switch {
 			// start
-			case strings.HasPrefix(txt, CommandStart):
-				message = MessageDefault
+			case strings.HasPrefix(txt, commandStart):
+				message = messageDefault
 			// systemctl
-			case strings.HasPrefix(txt, CommandServiceStatus):
+			case strings.HasPrefix(txt, commandServiceStatus):
 				statuses, _ := svc.SystemctlStatus(controllableServices)
 				for service, status := range statuses {
 					message += fmt.Sprintf("%s: *%s*\n", service, status)
 				}
-			case strings.HasPrefix(txt, CommandServiceStart) || strings.HasPrefix(txt, CommandServiceStop):
+			case strings.HasPrefix(txt, commandServiceStart) || strings.HasPrefix(txt, commandServiceStop):
 				if len(controllableServices) > 0 {
 					var keyboards [][]bot.InlineKeyboardButton
 					message, keyboards = parseServiceCommand(txt)
@@ -338,31 +338,31 @@ func processUpdate(b *bot.Bot, update bot.Update) bool {
 						}
 					}
 				} else {
-					message = MessageNoControllableServices
+					message = messageNoControllableServices
 				}
-			case strings.HasPrefix(txt, CommandStatus):
+			case strings.HasPrefix(txt, commandStatus):
 				message = getStatus()
-			case strings.HasPrefix(txt, CommandHelp):
+			case strings.HasPrefix(txt, commandHelp):
 				message = getHelp()
 				options["reply_markup"] = bot.InlineKeyboardMarkup{ // inline keyboard for link to github page
 					InlineKeyboard: [][]bot.InlineKeyboardButton{
-						bot.NewInlineKeyboardButtonsWithUrl(map[string]string{
-							"GitHub": GithubPageUrl,
+						bot.NewInlineKeyboardButtonsWithURL(map[string]string{
+							"GitHub": githubPageUrl,
 						}),
 					},
 				}
 			// fallback
 			default:
 				if len(txt) > 0 {
-					message = fmt.Sprintf("*%s*: %s", txt, MessageUnknownCommand)
+					message = fmt.Sprintf("*%s*: %s", txt, messageUnknownCommand)
 				} else {
-					message = MessageUnknownCommand
+					message = messageUnknownCommand
 				}
 			}
 		}
 
 		// send message
-		if sent := b.SendMessage(update.Message.Chat.Id, message, options); sent.Ok {
+		if sent := b.SendMessage(update.Message.Chat.ID, message, options); sent.Ok {
 			result = true
 		} else {
 			log.Printf("*** Failed to send message: %s", *sent.Description)
@@ -384,9 +384,9 @@ func processCallbackQuery(b *bot.Bot, update bot.Update) bool {
 	result := false
 
 	var message string = ""
-	if strings.HasPrefix(txt, CommandCancel) { // cancel command
+	if strings.HasPrefix(txt, commandCancel) { // cancel command
 		message = ""
-	} else if strings.HasPrefix(txt, CommandServiceStart) || strings.HasPrefix(txt, CommandServiceStop) { // service
+	} else if strings.HasPrefix(txt, commandServiceStart) || strings.HasPrefix(txt, commandServiceStop) { // service
 		message, _ = parseServiceCommand(txt)
 	} else {
 		log.Printf("*** Unprocessable callback query: %s", txt)
@@ -399,15 +399,15 @@ func processCallbackQuery(b *bot.Bot, update bot.Update) bool {
 	if len(message) > 0 {
 		options["text"] = message
 	}
-	if apiResult := b.AnswerCallbackQuery(query.Id, options); apiResult.Ok {
+	if apiResult := b.AnswerCallbackQuery(query.ID, options); apiResult.Ok {
 		// edit message and remove inline keyboards
 		options := map[string]interface{}{
-			"chat_id":    query.Message.Chat.Id,
-			"message_id": query.Message.MessageId,
+			"chat_id":    query.Message.Chat.ID,
+			"message_id": query.Message.MessageID,
 		}
 
 		if len(message) <= 0 {
-			message = MessageCanceled
+			message = messageCanceled
 		}
 		if apiResult := b.EditMessageText(message, options); apiResult.Ok {
 			result = true
