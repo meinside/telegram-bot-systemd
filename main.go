@@ -16,17 +16,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/pkg/profile"
-
 	svc "github.com/meinside/rpi-tools/service"
 	bot "github.com/meinside/telegram-bot-go"
 )
 
 const (
 	configFilename = "config.json"
-
-	//doProfiling = true
-	doProfiling = false
 
 	githubPageUrl = "https://github.com/meinside/telegram-bot-systemd"
 
@@ -134,15 +129,6 @@ var allKeyboards = [][]bot.KeyboardButton{
 // initialization
 func init() {
 	launched = time.Now()
-
-	// for profiling
-	if doProfiling {
-		defer profile.Start(
-			profile.BlockProfile,
-			profile.CPUProfile,
-			profile.MemProfile,
-		).Stop()
-	}
 
 	// read variables from config file
 	if config, err := getConfig(); err == nil {
