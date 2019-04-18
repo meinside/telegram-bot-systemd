@@ -1,4 +1,5 @@
 github.com/meinside/rpi-tools v0.1.0 h1:0ImgtwSf457M42ZBlhOZiZ19WlzjyyL+nTlclYHdAr4=
 github.com/meinside/rpi-tools v0.1.0/go.mod h1:4p9tXh1Om0VIxADfedma+2E64gV+/gYwEjlk+2Dcb8U=
-github.com/meinside/telegram-bot-go v0.0.10 h1:9QzyLPWSahZHrvHUBFwiR4LK72uFv3Xw54QzdLZYtcQ=
-github.com/meinside/telegram-bot-go v0.0.10/go.mod h1:0fDch0mdkOg96AxEZnFWTn6Q46tpfuMExAGZiomYucg=
+github.com/meinside/telegram-bot-go v0.0.11 h1:/O68sG38WmxjZw1RBjgeUZN78yuFmB7Vlb75OqR7zw0=
+github.com/meinside/telegram-bot-go v0.0.11/go.mod h1:gS/BXucqjU9q4BX5W1OlsQ3BoOlJqGOTPvAG9+4+TsA=
+github.com/meinside/wasm-helper-go v0.0.4/go.mod h1:rrqb+xFboJK0/No8NAGkTTk1Y4qEUYHd4BFpUQ3g3wY=
