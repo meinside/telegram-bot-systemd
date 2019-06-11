@@ -125,6 +125,10 @@ var allKeyboards = [][]bot.KeyboardButton{
 	bot.NewKeyboardButtons(commandStatus, commandHelp),
 }
 
+// loggers
+var _stdout = log.New(os.Stdout, "", log.LstdFlags)
+var _stderr = log.New(os.Stderr, "", log.LstdFlags)
+
 // initialization
 func init() {
 	launched = time.Now()
@@ -265,12 +269,12 @@ func processUpdate(b *bot.Bot, update bot.Update) bool {
 	// check username
 	var userId string
 	if update.Message.From.Username == nil {
-		log.Printf("*** Not allowed (no user name): %s", update.Message.From.FirstName)
+		_stderr.Printf("not allowed (no user name): %s", update.Message.From.FirstName)
 		return false
 	}
 	userId = *update.Message.From.Username
 	if !isAvailableId(userId) {
-		log.Printf("*** Id not allowed: %s", userId)
+		_stderr.Printf("id not allowed: %s", userId)
 
 		return false
 	}
@@ -350,10 +354,10 @@ func processUpdate(b *bot.Bot, update bot.Update) bool {
 		if sent := b.SendMessage(update.Message.Chat.ID, message, options); sent.Ok {
 			result = true
 		} else {
-			log.Printf("*** Failed to send message: %s", *sent.Description)
+			_stderr.Printf("failed to send message: %s", *sent.Description)
 		}
 	} else {
-		log.Printf("*** Session does not exist for id: %s", userId)
+		_stderr.Printf("session does not exist for id: %s", userId)
 	}
 	pool.Unlock()
 
@@ -374,7 +378,7 @@ func processCallbackQuery(b *bot.Bot, update bot.Update) bool {
 	} else if strings.HasPrefix(txt, commandServiceStart) || strings.HasPrefix(txt, commandServiceStop) { // service
 		message, _ = parseServiceCommand(txt)
 	} else {
-		log.Printf("*** Unprocessable callback query: %s", txt)
+		_stderr.Printf("unprocessable callback query: %s", txt)
 
 		return result // == false
 	}
@@ -397,10 +401,10 @@ func processCallbackQuery(b *bot.Bot, update bot.Update) bool {
 		if apiResult := b.EditMessageText(message, options); apiResult.Ok {
 			result = true
 		} else {
-			log.Printf("*** Failed to edit message text: %s", *apiResult.Description)
+			_stderr.Printf("failed to edit message text: %s", *apiResult.Description)
 		}
 	} else {
-		log.Printf("*** Failed to answer callback query: %+v", query)
+		_stderr.Printf("failed to answer callback query: %+v", query)
 	}
 
 	return result
@@ -420,7 +424,7 @@ func main() {
 
 	// get info about this bot
 	if me := client.GetMe(); me.Ok {
-		log.Printf("Launching bot: @%s (%s)", *me.Result.Username, me.Result.FirstName)
+		_stdout.Printf("launching bot: @%s (%s)", *me.Result.Username, me.Result.FirstName)
 
 		// delete webhook (getting updates will not work when wehbook is set up)
 		if unhooked := client.DeleteWebhook(); unhooked.Ok {
@@ -435,7 +439,7 @@ func main() {
 						processCallbackQuery(b, update)
 					}
 				} else {
-					log.Printf("*** Error while receiving update (%s)", err)
+					_stderr.Printf("error while receiving update (%s)", err)
 				}
 			})
 		} else {
